@@ -3,14 +3,17 @@
 <?php
 $url = $_REQUEST["url"];
 $PAGE = "gerrit";
+$title = "gerrit results";
+if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.="/";
 if(strpos($url,"chromium-review") === false) {
 	$url .= "&format=JSON";
 	$PAGE = "googlesource";
+	foreach($urlP as $u)
+		if(is_numeric($u[0]))
+			$title = explode("?",str_replace("..", " 🡒 ", $u))[0];
 }
 $urlP = explode("/",$url);
-foreach($urlP as $u)
-        if(is_numeric($u[0]))
-                $title = explode("?",str_replace("..", " 🡒 ", $u))[0];
+
 ?>
 	<title><?=$title?></title>
 	<link rel="icon" type="image/png" href="favicon.ico">
@@ -24,12 +27,13 @@ if($_REQUEST["save"])
 	header("Location: index.php?".$vars);
 	exit;
 }
-echo "<a style='float:left' href='index.php?".$vars."'>< Edit </a>";
+echo "<a style='float:left' href='index.php?".$vars."'>< Edit </a><br clear=both>";
 $bugURL = "https://bugs.chromium.org/p/chromium/issues/detail?id=";
 echo "<h1>".$title."</h1>";
 $file = file_get_contents($url) or die("Fatal: Invalid URL <br>$url");
 
 $data = json_decode(substr($file, 4));
+if(empty($data)) die("Fatal: Response was not JSON or was empty");
 $black = explode(PHP_EOL,$_REQUEST["blacklist"]);
 $white = explode(PHP_EOL,$_REQUEST["whitelist"]);
 echo "<table>";
@@ -40,6 +44,7 @@ if($PAGE == "googlesource")
 foreach($data->log as $d)
 {
 	$compare = $d->message.$d->author->name;
+	$total = sizeof($data->log);
 	foreach($black as $b)
 		if(@stripos($compare,trim($b)) !== false)
 		{
@@ -67,13 +72,30 @@ foreach($data->log as $d)
 if($PAGE == "gerrit")
 foreach($data as $d)
 {
+	$total++;
+	//$details = json_decode( substr(file_get_contents("https://chromium-review.googlesource.com/changes/".$d->_number."/detail/"),4) );
+	$compare = $d->subject.$d->project.$d->status.$d->owner->_account_id;
+	foreach($black as $b)
+		if(@stripos($compare,trim($b)) !== false)
+		{
+			foreach($white as $w)
+				if(@stripos($compare,trim($w)) !== false)
+				{
+					$foundf++;
+					break 2;
+				}
+			$skipped++;
+			continue 2;
+		}
 	echo "<tr>";
-	echo "<td>".$d->subject."</td><td>".$d->submit_type."</td><td>".$d->updated."</td>";
+	$link="https://chromium-review.googlesource.com/q/".$d->_number;
+	echo "<td><a href='$link'>".$d->subject."</a></td><td>".$d->project."</td><td>".$d->status."</td><td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".time_elapsed_string(date("Y-m-d h:i:s",strtotime(explode('.',$d->updated)[0])),true)."</td>";
 	echo "</tr>";
+	unset($details);
 }
 
 echo "</table><br>\n";
-echo "Skipped $skipped of ".sizeof($data->log)." (".round($skipped/sizeof($data->log)*100,2)."%) entries on blacklist. Ignored $foundf entries from blacklist";
+echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) entries on blacklist. Ignored $foundf entries from blacklist";
 ?>
 </pre>
 </body>

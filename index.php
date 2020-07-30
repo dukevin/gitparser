@@ -14,7 +14,7 @@
 	<input type="text" name="url" id="url" placeholder="url" value="<?=$_REQUEST["url"]?>"/><br clear='both'>
 	<textarea id="blacklist" name="blacklist" placeholder="blacklist" height=50><?=urldecode($_REQUEST["blacklist"])?></textarea><textarea name="whitelist" id="whitelist" placeholder="whitelist"><?=urldecode($_REQUEST["whitelist"])?></textarea>
 	<br clear='both'>
-	<input type="submit" id="scrape" name="scrape" value="scrape" style="float:left"/>
+	<input type="submit" id="scrape" name="scrape" value="filter" style="float:left"/>
 	<input type="submit" id="save" name="save" value="save" style="float:left"/>
 	<br clear='both'><span style="color: #3cf"><?if(!empty($_REQUEST["blacklist"])) echo "saved";?></span>
 </form>
