@@ -79,8 +79,6 @@ echo "Skipped $skipped of ".sizeof($data->log)." (".round($skipped/sizeof($data-
 </body>
 </html>
 
-
-
 <?php
 function time_elapsed_string($datetime, $full = false) {
     $now = new DateTime;
