@@ -86,7 +86,7 @@ if($PAGE == "gerrit") {
 		for($i=0; $i<$_REQUEST['amt']; $i+=500)
 		{
 			try {
-				$data = get_json($url."?O=881&S=".$i."&n=500&q=changes/");
+				$data = get_json($url."?O=881&S=".$i."&n=500&q=".$_REQUEST['q']."/");
 			} catch(Exception $e) {
 				echo($e->getMessage());
 			}
@@ -120,6 +120,7 @@ else
 //check givin compare string with blacklist. If it is on the blacklist and not whitelist, return true
 function on_blacklist($compare)
 {
+	global $foundf, $skipped;
 	$black = explode(PHP_EOL,$_REQUEST["blacklist"]);
 	$white = explode(PHP_EOL,$_REQUEST["whitelist"]);
 	foreach($black as $b)
