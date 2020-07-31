@@ -4,15 +4,17 @@
 $url = $_REQUEST["url"];
 $PAGE = "gerrit";
 $title = "gerrit results";
-if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.="/";
-if(strpos($url,"chromium-review") === false) {
+$url = str_replace("/q", '', $url);
+$urlP = explode("/",$url);
+if(strpos($url,"chromium.googlesource") !== false) {
 	$url .= "&format=JSON";
 	$PAGE = "googlesource";
+	$title = "Google Source";
 	foreach($urlP as $u)
 		if(is_numeric($u[0]))
 			$title = explode("?",str_replace("..", " 🡒 ", $u))[0];
 }
-$urlP = explode("/",$url);
+else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.="/";
 
 ?>
 	<title><?=$title?></title>
@@ -30,33 +32,22 @@ if($_REQUEST["save"])
 echo "<a style='float:left' href='index.php?".$vars."'>< Edit </a><br clear=both>";
 $bugURL = "https://bugs.chromium.org/p/chromium/issues/detail?id=";
 echo "<h1>".$title."</h1>";
-$file = file_get_contents($url) or die("Fatal: Invalid URL <br>$url");
+try {
+	$data = get_json($url);
+} catch(Exception $e) {
+	die($e->getMessage());
+}
 
-$data = json_decode(substr($file, 4));
-if(empty($data)) die("Fatal: Response was not JSON or was empty");
-$black = explode(PHP_EOL,$_REQUEST["blacklist"]);
-$white = explode(PHP_EOL,$_REQUEST["whitelist"]);
 echo "<table>";
 
 $skipped = $total = $foundf = 0;
 
 if($PAGE == "googlesource")
 foreach($data->log as $d)
-{
-	$compare = $d->message.$d->author->name;
+{ 
+	if(on_blacklist($d->message.$d->author->name))
+		continue;
 	$total = sizeof($data->log);
-	foreach($black as $b)
-		if(@stripos($compare,trim($b)) !== false)
-		{
-			foreach($white as $w)
-				if(@stripos($compare,trim($w)) !== false)
-				{
-					$foundf++;
-					break 2;
-				}
-			$skipped++;
-			continue 2;
-		}
 	echo "<tr>";
 	$message = explode(PHP_EOL, $d->message);
 	$message1 = htmlspecialchars($message[0]);
@@ -69,12 +60,68 @@ foreach($data->log as $d)
 	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."'>".$message1."</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time))."</td>";
 	echo "</tr>";
 }
-if($PAGE == "gerrit")
-foreach($data as $d)
+if($PAGE == "gerrit") {
+	if(empty($_REQUEST['amt']))
+		$_REQUEST['amt'] = 0;
+	if($_REQUEST['amt'] > 1000000 || !is_numeric($_REQUEST['amt']))
+	{
+		echo "gerrit amount was either higher than 1000000 or was not a number. Defaulting to 500<br>";
+		$_REQUEST['amt'] = 500;
+	}
+	foreach($data as $d)
+	{
+		$total++;
+		//$details = json_decode( substr(file_get_contents("https://chromium-review.googlesource.com/changes/".$d->_number."/detail/"),4) );
+		if(on_blacklist($d->subject.$d->project.$d->status.$d->owner->_account_id)) 
+			continue;
+		echo "<tr>";
+		$link="https://chromium-review.googlesource.com/q/".$d->_number;
+		echo "<td><a href='$link'>".htmlspecialchars($d->subject)."</a></td><td>".htmlspecialchars($d->project)."</td><td>".htmlspecialchars($d->status)."</td><td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
+		//time_elapsed_string(date("Y-m-d H:i:s",strtotime(explode('.',$d->updated)[0])),true)
+		echo "</tr>";
+		unset($details);
+	}
+	if($total < $_REQUEST['amt'])
+	{
+		for($i=0; $i<$_REQUEST['amt']; $i+=500)
+		{
+			try {
+				$data = get_json($url."?O=881&S=".$i."&n=500&q=changes/");
+			} catch(Exception $e) {
+				echo($e->getMessage());
+			}
+			foreach($data as $d)
+			{
+				$total++;
+				if(on_blacklist($d->subject.$d->project.$d->status.$d->owner->_account_id.$d->status)) 
+					continue;
+				echo "<tr>";
+				$link="https://chromium-review.googlesource.com/q/".$d->_number;
+
+				echo "<td><a href='$link'>".htmlspecialchars($d->subject)."</a></td><td>".htmlspecialchars($d->project)."</td><td>".$d->status."</td><td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
+				echo "</tr>";
+				unset($details);
+			}
+		}
+	}
+}
+
+echo "</table><br>\n";
+if($total == 0 && $findf == 0 && $skipped == 0)
+	echo "Empty results from <br> $url <br> identified as $PAGE";
+else
+	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) entries on blacklist. Ignored $foundf entries from blacklist";
+?>
+</pre>
+</body>
+</html>
+
+<?php
+//check givin compare string with blacklist. If it is on the blacklist and not whitelist, return true
+function on_blacklist($compare)
 {
-	$total++;
-	//$details = json_decode( substr(file_get_contents("https://chromium-review.googlesource.com/changes/".$d->_number."/detail/"),4) );
-	$compare = $d->subject.$d->project.$d->status.$d->owner->_account_id;
+	$black = explode(PHP_EOL,$_REQUEST["blacklist"]);
+	$white = explode(PHP_EOL,$_REQUEST["whitelist"]);
 	foreach($black as $b)
 		if(@stripos($compare,trim($b)) !== false)
 		{
@@ -82,26 +129,28 @@ foreach($data as $d)
 				if(@stripos($compare,trim($w)) !== false)
 				{
 					$foundf++;
-					break 2;
+					return false;
 				}
 			$skipped++;
-			continue 2;
+			return true;
 		}
-	echo "<tr>";
-	$link="https://chromium-review.googlesource.com/q/".$d->_number;
-	echo "<td><a href='$link'>".$d->subject."</a></td><td>".$d->project."</td><td>".$d->status."</td><td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".time_elapsed_string(date("Y-m-d h:i:s",strtotime(explode('.',$d->updated)[0])),true)."</td>";
-	echo "</tr>";
-	unset($details);
+	return false;
 }
-
-echo "</table><br>\n";
-echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) entries on blacklist. Ignored $foundf entries from blacklist";
-?>
-</pre>
-</body>
-</html>
-
-<?php
+function convertTime($time)
+{
+	$date = DateTime::createFromFormat("Y-m-d H:i:s", $time);
+	$date->modify("-7 hours");
+	return $date->format("Y-m-d H:i:s");
+}
+function get_json($url)
+{
+	if(! $file = file_get_contents($url)) 
+		throw new Exception("Fatal: Invalid URL <br>$url");
+	$data = json_decode(substr($file, 4));
+	if(empty($data)) 
+		throw new Exception("Fatal: Response was not JSON or was empty<br>$url<br>$data");
+	return $data;
+}
 function time_elapsed_string($datetime, $full = false) {
     $now = new DateTime;
     $ago = new DateTime($datetime);
