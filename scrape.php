@@ -19,11 +19,11 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 ?>
 	<title><?=$title?></title>
 	<link rel="icon" type="image/png" href="favicon.ico">
-	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;}</style>
+	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}</style>
 </head>
 <body>
 <?php
-$vars = "url=".urlencode($_REQUEST["url"])."&whitelist=".urlencode($_REQUEST["whitelist"])."&blacklist=".urlencode($_REQUEST["blacklist"]);
+$vars = "url=".urlencode($_REQUEST["url"])."&whitelist=".urlencode($_REQUEST["whitelist"])."&blacklist=".urlencode($_REQUEST["blacklist"])."&only=".urlencode($_REQUEST["only"])."&amt=".urlencode($_REQUEST["amt"])."&q=".urlencode($_REQUEST["q"]);
 if($_REQUEST["save"])
 {
 	header("Location: index.php?".$vars);
@@ -57,51 +57,34 @@ foreach($data->log as $d)
 	$message2 = explode("Change-Id",$message2);
 	$message2 = $message2[0];
 	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0'>$0</a>", $message2);
-	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."'>".$message1."</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time))."</td>";
+	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time))."</td>";
 	echo "</tr>";
 }
 if($PAGE == "gerrit") {
 	if(empty($_REQUEST['amt']))
-		$_REQUEST['amt'] = 0;
-	if($_REQUEST['amt'] > 1000000 || !is_numeric($_REQUEST['amt']))
+		$_REQUEST['amt'] = 500;
+	if($_REQUEST['amt'] > 1000000 || !is_numeric($_REQUEST['amt']) || $_REQUEST['amt'] < 1)
 	{
-		echo "gerrit amount was either higher than 1000000 or was not a number. Defaulting to 500<br>";
+		echo "gerrit amount was not valid, defaulting to 500<br>";
 		$_REQUEST['amt'] = 500;
 	}
-	foreach($data as $d)
+	for($i=0; $i<$_REQUEST['amt']; $i+=500)
 	{
-		$total++;
-		//$details = json_decode( substr(file_get_contents("https://chromium-review.googlesource.com/changes/".$d->_number."/detail/"),4) );
-		if(on_blacklist($d->subject.$d->project.$d->status.$d->owner->_account_id)) 
-			continue;
-		echo "<tr>";
-		$link="https://chromium-review.googlesource.com/q/".$d->_number;
-		echo "<td><a href='$link'>".htmlspecialchars($d->subject)."</a></td><td>".htmlspecialchars($d->project)."</td><td>".htmlspecialchars($d->status)."</td><td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
-		//time_elapsed_string(date("Y-m-d H:i:s",strtotime(explode('.',$d->updated)[0])),true)
-		echo "</tr>";
-		unset($details);
-	}
-	if($total < $_REQUEST['amt'])
-	{
-		for($i=0; $i<$_REQUEST['amt']; $i+=500)
+		try {
+			$data = get_json($url."?O=881&S=".$i."&n=500&q=".$_REQUEST['q']."/");
+		} catch(Exception $e) {
+			echo($e->getMessage());
+		}
+		foreach($data as $d)
 		{
-			try {
-				$data = get_json($url."?O=881&S=".$i."&n=500&q=".$_REQUEST['q']."/");
-			} catch(Exception $e) {
-				echo($e->getMessage());
-			}
-			foreach($data as $d)
-			{
-				$total++;
-				if(on_blacklist($d->subject.$d->project.$d->status.$d->owner->_account_id.$d->status)) 
-					continue;
-				echo "<tr>";
-				$link="https://chromium-review.googlesource.com/q/".$d->_number;
-
-				echo "<td><a href='$link'>".htmlspecialchars($d->subject)."</a></td><td>".htmlspecialchars($d->project)."</td><td>".$d->status."</td><td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
-				echo "</tr>";
-				unset($details);
-			}
+			$total++;
+			if(on_blacklist($d->subject.$d->project.$d->status.$d->owner->_account_id.$d->status)) 
+				continue;
+			echo "<tr>";
+			$link="https://chromium-review.googlesource.com/q/".$d->_number;
+			echo "<td><a href='$link' target='_blank'>".htmlspecialchars($d->subject)."</a></td><td class='med'>".htmlspecialchars($d->project)."</td>".colorcell($d->status)."<td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
+			echo "</tr>";
+			unset($details);
 		}
 	}
 }
@@ -117,12 +100,26 @@ else
 </html>
 
 <?php
-//check givin compare string with blacklist. If it is on the blacklist and not whitelist, return true
+//check givin compare string with blacklist. If it is on the blacklist and not whitelist, return true. If it is on show only return true
 function on_blacklist($compare)
 {
 	global $foundf, $skipped;
 	$black = explode(PHP_EOL,$_REQUEST["blacklist"]);
 	$white = explode(PHP_EOL,$_REQUEST["whitelist"]);
+	$only = explode(PHP_EOL,$_REQUEST["only"]);
+	if(count($only) > 0 && !empty($only[0]))
+	foreach($only as $o)
+		if(@stripos($compare,trim($o)) === false) //not on show only list
+		{
+			foreach($white as $w)
+				if(@stripos($compare,trim($w)) !== false)
+				{
+					$foundf++;
+					return false;
+				}
+			$skipped++;
+			return true;
+		}
 	foreach($black as $b)
 		if(@stripos($compare,trim($b)) !== false)
 		{
@@ -137,11 +134,22 @@ function on_blacklist($compare)
 		}
 	return false;
 }
+function colorcell($str)
+{
+	if($str == "NEW")
+		$color="white";
+	if($str == "MERGED")
+		$color="green";
+	if($str == "ABANDONED")
+		$color="red";
+	return "<td class='$color med'>".$str."</td>";
+
+}
 function convertTime($time)
 {
 	$date = DateTime::createFromFormat("Y-m-d H:i:s", $time);
-	$date->modify("-7 hours");
-	return $date->format("Y-m-d H:i:s");
+	$date->modify("-5 hours");
+	return time_elapsed_string($date->format("Y-m-d H:i:s"),true);
 }
 function get_json($url)
 {
