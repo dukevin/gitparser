@@ -211,7 +211,7 @@ function get_json($url)
 		throw new Exception("Fatal: Invalid URL <br>$url");
 	$data = json_decode(substr($file, 4));
 	if(empty($data)) 
-		throw new Exception("Fatal: Response was not JSON or was empty<br>$url<br>$data");
+		throw new Exception("!");
 	return $data;
 }
 function time_elapsed_string($datetime, $full = false) {

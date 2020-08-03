@@ -2,8 +2,8 @@
 $version = $_REQUEST['num'];
 $url = urldecode($_REQUEST['url']);
 if(empty($version))
-	die("Error: version was empty");
-$csv = file_get_contents($url) or die("Unavailable: $url");
+	die("!!!");
+$csv = file_get_contents($url) or die("!!!");
 $lines = explode(PHP_EOL, $csv);
 foreach($lines as $line)
 {
