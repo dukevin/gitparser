@@ -83,6 +83,7 @@ if($_REQUEST["save"])
 }
 echo "<a style='float:left' href='index.php?".$vars."'>&lt; Edit </a><br clear=both>\n";
 $bugURL = "https://bugs.chromium.org/p/chromium/issues/detail?id=";
+$CL = "https://chromeos.google.com/partner/console/a/1/clFinder?query=";
 echo "<h1>".$title."</h1>\n";
 try {
 	$data = get_json($url);
@@ -111,7 +112,7 @@ foreach($data->log as $d)
 	$message2 = explode("Change-Id",$message2);
 	$message2 = $message2[0];
 	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0' target='_blank'>$0</a>", $message2);
-	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time))."</td>";
+	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time))."</td>";
 	echo "</tr>";
 }
 if($PAGE == "gerrit") {
