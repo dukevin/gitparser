@@ -28,19 +28,46 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 	<script>
 	$(document).ready(function(){
 		$("#platformvn").show();
-		$("#platformvn").html("...");
+		$("#platformvn").html("... 🡒 ");
 		$.ajax({
-			url: "platformvn.php?num=<?=$vn[0]?>",
+			url: "platformvn.php?num=<?=$vn[0]?>&url=<?=urlencode("https://cros-updates-serving.appspot.com/csv")?>",
 			context: document.body
 		}).done(function(d){
-			$("#platformvn").html(d+" 🡒 ");
+			if(d == "?")
+			{
+				$("#platformvn").html("?.. 🡒 ");
+				$.ajax({
+					url: "platformvn.php?num=<?=$vn[0]?>&url=<?=urlencode("https://cros-omahaproxy.appspot.com/all")?>",
+					context: document.body
+				}).done(function(d){
+					if(d == "?")
+						$("#platformvn").html("??? 🡒 ");
+					else
+						$("#platformvn").html(d+" 🡒 ");
+				});
+			}
+			else
+				$("#platformvn").html(d+" 🡒 ");
 		});
 		$("#platformvn2").show();
 		$("#platformvn2").html("...");
 		$.ajax({
-			url: "platformvn.php?num=<?=$vn[1]?>",
+			url: "platformvn.php?num=<?=$vn[1]?>&url=<?=urlencode("https://cros-updates-serving.appspot.com/csv")?>",
 			context: document.body
 		}).done(function(d){
+			if(d == "?")
+			{
+				$("#platformvn2").html("?..");
+				$.ajax({
+					url: "platformvn.php?num=<?=$vn[1]?>&url=<?=urlencode("https://cros-omahaproxy.appspot.com/all")?>",
+					context: document.body
+				}).done(function(d){
+					if(d == "?")
+						$("#platformvn2").html("???");
+					else
+						$("#platformvn2").html(d);
+				});
+			}
 			$("#platformvn2").html(d);
 		});
 	});
