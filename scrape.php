@@ -1,3 +1,4 @@
+<!doctype html>
 <html>
 <head>
 <?php
@@ -12,7 +13,10 @@ if(strpos($url,"chromium.googlesource") !== false) {
 	$title = "Google Source";
 	foreach($urlP as $u)
 		if(is_numeric($u[0]))
-			$title = explode("?",str_replace("..", " 🡒 ", $u))[0];
+		{
+			$vn = explode("..", $u);
+			$title = $vn[0]." 🡒 ".$vn[1];
+		}
 }
 else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.="/";
 
@@ -20,6 +24,27 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 	<title><?=$title?></title>
 	<link rel="icon" type="image/png" href="favicon.ico">
 	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}</style>
+	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+	<script>
+	$(document).ready(function(){
+		$("#platformvn").show();
+		$("#platformvn").html("...");
+		$.ajax({
+			url: "platformvn.php?num=<?=$vn[0]?>",
+			context: document.body
+		}).done(function(d){
+			$("#platformvn").html(d+" 🡒 ");
+		});
+		$("#platformvn2").show();
+		$("#platformvn2").html("...");
+		$.ajax({
+			url: "platformvn.php?num=<?=$vn[1]?>",
+			context: document.body
+		}).done(function(d){
+			$("#platformvn2").html(d);
+		});
+	});
+	</script>
 </head>
 <body>
 <?php
@@ -29,14 +54,16 @@ if($_REQUEST["save"])
 	header("Location: index.php?".$vars);
 	exit;
 }
-echo "<a style='float:left' href='index.php?".$vars."'>< Edit </a><br clear=both>";
+echo "<a style='float:left' href='index.php?".$vars."'>&lt; Edit </a><br clear=both>\n";
 $bugURL = "https://bugs.chromium.org/p/chromium/issues/detail?id=";
-echo "<h1>".$title."</h1>";
+echo "<h1>".$title."</h1>\n";
 try {
 	$data = get_json($url);
 } catch(Exception $e) {
 	die($e->getMessage());
 }
+
+echo "<span id='platformvn' style='display:none'>".(empty($vn[0]) ? "" : $vn[0])."</span>&nbsp<span id='platformvn2' style='display:none'>".(empty($vn[1]) ? "" : $vn[1])."</span>\n";
 
 echo "<table>";
 
@@ -56,7 +83,7 @@ foreach($data->log as $d)
 	$message2 = implode("<br>\n",$message);
 	$message2 = explode("Change-Id",$message2);
 	$message2 = $message2[0];
-	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0'>$0</a>", $message2);
+	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0' target='_blank'>$0</a>", $message2);
 	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time))."</td>";
 	echo "</tr>";
 }
@@ -95,7 +122,6 @@ if($total == 0 && $findf == 0 && $skipped == 0)
 else
 	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) entries on blacklist. Ignored $foundf entries from blacklist";
 ?>
-</pre>
 </body>
 </html>
 
