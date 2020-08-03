@@ -27,6 +27,7 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 	<script>
 	$(document).ready(function(){
+		<?= ($PAGE == "gerrit" || (empty($vn[0])&&empty($vn[1]))) ? "return;\n" : "" ?>
 		$("#platformvn").show();
 		$("#platformvn").html("... 🡒 ");
 		$.ajax({
@@ -112,7 +113,7 @@ foreach($data->log as $d)
 	$message2 = explode("Change-Id",$message2);
 	$message2 = $message2[0];
 	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0' target='_blank'>$0</a>", $message2);
-	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time))."</td>";
+	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time,true))."</td>";
 	echo "</tr>";
 }
 if($PAGE == "gerrit") {
@@ -125,8 +126,9 @@ if($PAGE == "gerrit") {
 	}
 	for($i=0; $i<$_REQUEST['amt']; $i+=500)
 	{
+		$q = empty($_REQUEST['q']) ? "" : "&q=".$_REQUEST['q'];
 		try {
-			$data = get_json($url."?O=881&S=".$i."&n=500&q=".$_REQUEST['q']."/");
+			$data = get_json($url."?O=881&S=".$i."&n=500".$q);
 		} catch(Exception $e) {
 			echo($e->getMessage());
 		}
@@ -148,7 +150,7 @@ echo "</table><br>\n";
 if($total == 0 && $findf == 0 && $skipped == 0)
 	echo "Empty results from <br> $url <br> identified as $PAGE";
 else
-	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) entries on blacklist. Ignored $foundf entries from blacklist";
+	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) except for $foundf entries";
 ?>
 </body>
 </html>
@@ -211,7 +213,7 @@ function get_json($url)
 		throw new Exception("Fatal: Invalid URL <br>$url");
 	$data = json_decode(substr($file, 4));
 	if(empty($data)) 
-		throw new Exception("!");
+		throw new Exception("Error: Empty or invalid JSON");
 	return $data;
 }
 function time_elapsed_string($datetime, $full = false) {
