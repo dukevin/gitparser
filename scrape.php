@@ -28,50 +28,31 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 	<script>
 	$(document).ready(function(){
 		<?= ($PAGE == "gerrit" || (empty($vn[0])&&empty($vn[1]))) ? "return;\n" : "" ?>
-		$("#platformvn").show();
-		$("#platformvn").html("... 🡒 ");
-		$.ajax({
-			url: "platformvn.php?num=<?=$vn[0]?>&url=<?=urlencode("https://cros-updates-serving.appspot.com/csv")?>",
-			context: document.body
-		}).done(function(d){
-			if(d == "?")
-			{
-				$("#platformvn").html("?.. 🡒 ");
-				$.ajax({
-					url: "platformvn.php?num=<?=$vn[0]?>&url=<?=urlencode("https://cros-omahaproxy.appspot.com/all")?>",
-					context: document.body
-				}).done(function(d){
-					if(d == "?")
-						$("#platformvn").html("??? 🡒 ");
-					else
-						$("#platformvn").html(d+" 🡒 ");
-				});
-			}
-			else
-				$("#platformvn").html(d+" 🡒 ");
-		});
-		$("#platformvn2").show();
-		$("#platformvn2").html("...");
-		$.ajax({
-			url: "platformvn.php?num=<?=$vn[1]?>&url=<?=urlencode("https://cros-updates-serving.appspot.com/csv")?>",
-			context: document.body
-		}).done(function(d){
-			if(d == "?")
-			{
-				$("#platformvn2").html("?..");
-				$.ajax({
-					url: "platformvn.php?num=<?=$vn[1]?>&url=<?=urlencode("https://cros-omahaproxy.appspot.com/all")?>",
-					context: document.body
-				}).done(function(d){
-					if(d == "?")
-						$("#platformvn2").html("???");
-					else
-						$("#platformvn2").html(d);
-				});
-			}
-			$("#platformvn2").html(d);
-		});
+		var r = window.result;
+		getVN("#platformvn", "<?=$vn[0]?>", 0);
+		getVN("#platformvn2", "<?=$vn[1]?>", 0);
 	});
+	function getVN(dom, num, index)
+	{
+		var url=["https://raw.githubusercontent.com/skylartaylor/cros-updates/master/src/data/cros-updates.json",
+		"https://cros-updates-serving.appspot.com/csv", "https://cros-updates-serving.appspot.com/all"];
+		$(dom).show();
+		$(dom).html("...");
+		$.ajax({
+			url: "platformvn.php?num="+num+"&url="+url[index],
+			context: document.body
+		}).done(function(d){
+			if(d == "?") {
+				$(dom).append("?");
+				if(index < url.length)
+					getVN(dom, num, index++);
+			}
+			else {
+				$(dom).html(d);
+				$("#platformb").html(" 🡒 ");
+			}
+		});
+	}
 	</script>
 </head>
 <body>
@@ -92,7 +73,7 @@ try {
 	die($e->getMessage());
 }
 
-echo "<span id='platformvn' style='display:none'>".(empty($vn[0]) ? "" : $vn[0])."</span>&nbsp<span id='platformvn2' style='display:none'>".(empty($vn[1]) ? "" : $vn[1])."</span>\n";
+echo "<span id='platformvn' style='display:none'>".(empty($vn[0]) ? "" : $vn[0])."</span><span id='platformb'>&nbsp</span><span id='platformvn2' style='display:none'>".(empty($vn[1]) ? "" : $vn[1])."</span>\n";
 
 echo "<table>";
 

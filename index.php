@@ -16,7 +16,7 @@
 			$("#url").val("https://chromium-review.googlesource.com/changes/");
 		});
 		$("#help").click(function(){
-			alert("url: Url location of a resource returning json data\nblacklist: A result containing any text from the blacklist is excluded. Blacklist entries are case insensitive and delimited by newlines\nshow only: Only results containing these keywords will be shown\nwhitelist: Results containing any whitelist word will be shown even if it is on the blacklist or show-only list\nFilter button: Fetch the results\nSave button: create a url saving all the entries on the page for bookmarking purposes\nGerrit only: amount: show x many entries. In multiples of 500\nGerrit only: search: pass search parameters to the query parameter fed into the Gerrit search bar ");
+			alert("url: \tUrl location of a resource returning json data\nAll list entries are case insensitive and separated by newlines\nblacklist: \tA result containing any text from the blacklist is excluded\nshow only: \tOnly results containing the text here will be shown\nwhitelist: \tResults containing any whitelist text will be shown even if it is on the blacklist or show-only list\nFilter button: \tFetch the results\nSave button: \tCreate a url saving all the entries on the page for bookmarking or linking\nGerrit only: amount: \tshow this many entries (in multiples of 500)\nGerrit only: search: \tpass search parameters to the Gerrit search query parameter");
 		});
 	});
 	</script>
@@ -31,7 +31,7 @@
 	<input type="text" name="q" id="q" placeholder="search" value="<?=empty($_REQUEST["q"]) ? "" : $_REQUEST["q"] ?>" placeholder="changes" size=65/></div><br clear='both'>
 	<textarea id="blacklist" name="blacklist" placeholder="blacklist" height=50><?=urldecode($_REQUEST["blacklist"])?></textarea><textarea name="only" id="only" placeholder="show only"><?=urldecode($_REQUEST["only"])?></textarea><textarea name="whitelist" id="whitelist" placeholder="whitelist"><?=urldecode($_REQUEST["whitelist"])?></textarea>
 	<br clear='both'>
-	<input type="submit" id="scrape" name="scrape" value="Filter" style="float:left"/>
+	<input type="submit" id="scrape" name="scrape" value="Filter" style="float:left;font-weight:bold"/>
 	<input type="submit" id="save" name="save" value="Save" style="float:left"/>
 	<button type="button" style="float:left" id="help">Help</button>
 	<br clear='both'>
