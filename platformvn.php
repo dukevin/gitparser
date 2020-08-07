@@ -20,7 +20,7 @@ if($u[sizeof($u)-1]=="json")
 		}
 	die("?");
 }
-$csv = file_get_contents($url) or die("!!!");
+$csv = file_get_contents($url) or die("!");
 $lines = explode(PHP_EOL, $csv);
 foreach($lines as $line)
 {

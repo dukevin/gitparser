@@ -36,16 +36,21 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 	{
 		var url=["https://raw.githubusercontent.com/skylartaylor/cros-updates/master/src/data/cros-updates.json",
 		"https://cros-updates-serving.appspot.com/csv", "https://cros-updates-serving.appspot.com/all"];
-		$(dom).show();
-		$(dom).html("...");
+		$(dom).fadeIn();
+		if(index == 0)
+			$(dom).html("...");
 		$.ajax({
 			url: "platformvn.php?num="+num+"&url="+url[index],
 			context: document.body
 		}).done(function(d){
-			if(d == "?") {
-				$(dom).append("?");
-				if(index < url.length)
-					getVN(dom, num, index++);
+			if(d == "?" || d == "!") {
+				if(index < url.length) {
+					$(dom).html($(dom).html().substr(1)+d);
+					console.log("Searching "+url[index]+" for "+num);
+					getVN(dom, num, index+1);
+				}
+				else
+					$(dom).css("color","#c00");
 			}
 			else {
 				$(dom).html(d);
