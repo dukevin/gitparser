@@ -28,14 +28,15 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 	<script>
 	$(document).ready(function(){
 		<?= ($PAGE == "gerrit" || (empty($vn[0])&&empty($vn[1]))) ? "return;\n" : "" ?>
-		var r = window.result;
-		getVN("#platformvn", "<?=$vn[0]?>", 0);
-		getVN("#platformvn2", "<?=$vn[1]?>", 0);
+		var vn = new Array();
+		getVN("#platformvn", "<?=$vn[0]?>", 0, 0, vn);
+		getVN("#platformvn2", "<?=$vn[1]?>", 0, 1, vn);
 	});
-	function getVN(dom, num, index)
+	function getVN(dom, num, index, i, vn)
 	{
 		var url=["https://raw.githubusercontent.com/skylartaylor/cros-updates/master/src/data/cros-updates.json",
 		"https://cros-updates-serving.appspot.com/csv", "https://cros-updates-serving.appspot.com/all"];
+		console.log("Searching "+url[index]+" for "+num);
 		$(dom).fadeIn();
 		if(index == 0)
 			$(dom).html("...");
@@ -46,7 +47,6 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 			if(d == "?" || d == "!") {
 				if(index < url.length) {
 					$(dom).html($(dom).html().substr(1)+d);
-					console.log("Searching "+url[index]+" for "+num);
 					getVN(dom, num, index+1);
 				}
 				else
@@ -55,8 +55,16 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 			else {
 				$(dom).html(d);
 				$("#platformb").html(" 🡒 ");
+				vn[i] = d;
+				makeVNclick(vn); 
 			}
 		});
+	}
+	function makeVNclick(vn)
+	{
+		if(vn.length < 2)
+			return false;
+		$("#platcont").wrap('<a href=https://chromeos.google.com/partner/console/a/1/changelog?from='+vn[0]+'&to='+vn[1]+' target=_blank>');
 	}
 	</script>
 </head>
@@ -78,7 +86,7 @@ try {
 	die($e->getMessage());
 }
 
-echo "<span id='platformvn' style='display:none'>".(empty($vn[0]) ? "" : $vn[0])."</span><span id='platformb'>&nbsp</span><span id='platformvn2' style='display:none'>".(empty($vn[1]) ? "" : $vn[1])."</span>\n";
+echo "<span id='platcont'><span id='platformvn' style='display:none'>".(empty($vn[0]) ? "" : $vn[0])."</span><span id='platformb'>&nbsp</span><span id='platformvn2' style='display:none'>".(empty($vn[1]) ? "" : $vn[1])."</span></span>\n";
 
 echo "<table>";
 
