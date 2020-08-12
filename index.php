@@ -17,7 +17,7 @@
 			$("#url").val("https://chromium-review.googlesource.com/changes/");
 		});
 		$("#help").click(function(){
-			alert("url: \tUrl location of a resource returning json data\nAll list entries are case insensitive and separated by newlines\nblacklist: \tA result containing any text from the blacklist is excluded\nshow only: \tOnly results containing the text here will be shown\nwhitelist: \tResults containing any whitelist text will be shown even if it is on the blacklist or show-only list\nFilter button: \tFetch the results\nSave button: \tCreate a url saving all the entries on the page for bookmarking or linking\nGerrit only: amount: \tshow this many entries (in multiples of 500)\nGerrit only: search: \tpass search parameters to the Gerrit search query parameter");
+			alert("url: \tUrl location of a resource returning json data\nAll list entries are case insensitive and separated by newlines. Whitespaces are stripped.\nA `backtick` at the end or beginning of a word is treated as a whole word. For ex: roll matches [roll, scroll, roller], `roll matches [roll, roller], roll` matches [roll, scroll], `roll` only matches [roll]\nblacklist: \tA result containing any text from the blacklist is excluded\nshow only: \tOnly results containing the text here will be shown\nwhitelist: \tResults containing any whitelist text will be shown even if it is on the blacklist or show-only list\nFilter button: \tFetch the results\nSave button: \tCreate a url saving all the entries on the page for bookmarking or linking\nGerrit only: amount: \tshow this many entries (in multiples of 500)\nGerrit only: search: \tpass search parameters to the Gerrit search query parameter");
 		});
 		$("#versions table tr td:first-child").each(function(i){
 			var codename = $(this);
@@ -39,7 +39,7 @@
 		}).done(function(data){
 			$("time.timeago").text(data);
 			$("time.timeago").attr("datetime",data);
-			jQuery("time.timeago").timeago();
+			$("time.timeago").timeago();
 		});
 	});
 	</script>

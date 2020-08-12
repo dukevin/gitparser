@@ -23,10 +23,13 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 ?>
 	<title><?=$title?></title>
 	<link rel="icon" type="image/png" href="favicon.ico">
-	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}</style>
+	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}.purple{background-color:#f0e5fa}</style>
 	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 	<script>
 	$(document).ready(function(){
+		$("tr").mousedown(function(){
+			$(this).toggleClass("purple");
+		});
 		<?= ($PAGE == "gerrit" || (empty($vn[0])&&empty($vn[1]))) ? "return;\n" : "" ?>
 		var vn = new Array();
 		getVN("#platformvn", "<?=$vn[0]?>", 0, 0, vn);
@@ -144,7 +147,7 @@ echo "</table><br>\n";
 if($total == 0 && $findf == 0 && $skipped == 0)
 	echo "Empty results from <br> $url <br> identified as $PAGE";
 else
-	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) except for $foundf entries";
+	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) except for ".$foundf." entries";
 ?>
 </body>
 </html>
@@ -158,30 +161,69 @@ function on_blacklist($compare)
 	$white = explode(PHP_EOL,$_REQUEST["whitelist"]);
 	$only = explode(PHP_EOL,$_REQUEST["only"]);
 	if(count($only) > 0 && !empty($only[0]))
-	foreach($only as $o)
-		if(@stripos($compare,trim($o)) === false) //not on show only list
+		foreach($only as $o)
 		{
-			foreach($white as $w)
-				if(@stripos($compare,trim($w)) !== false)
-				{
-					$foundf++;
+			if(check_whole_words($compare, $o)) {
+				if(on_whitelist($compare, $white))
 					return false;
-				}
-			$skipped++;
-			return true;
+				$skipped++;
+				return true;
+			}
+			if(@stripos($compare,trim($o)) === false) //not on show only list
+			{
+				if(on_whitelist($compare, $white))
+					return false;
+				$skipped++;
+				return true;
+			}
 		}
 	foreach($black as $b)
-		if(@stripos($compare,trim($b)) !== false)
-		{
-			foreach($white as $w)
-				if(@stripos($compare,trim($w)) !== false)
-				{
-					$foundf++;
-					return false;
-				}
+	{
+		if(check_whole_words($compare,$b)) {
+			if(on_whitelist($compare, $white))
+				return false;
 			$skipped++;
 			return true;
 		}
+		if(@stripos($compare,trim($b)) !== false)
+		{
+			if(on_whitelist($compare, $white))
+				return false;
+			$skipped++;
+			return true;
+		}
+	}
+	return false;
+}
+function on_whitelist($compare, $white)
+{
+	global $foundf, $skipped;
+	foreach($white as $w)
+	{
+		if(check_whole_words($compare,$w)) {
+			$foundf++;
+			return true;
+		}
+		if(@stripos($compare,trim($w)) !== false) {
+			$foundf++;
+			return true;
+		}
+	}
+	return false;
+}
+function check_whole_words($compare, $word) //find whole words token and the whole word returns true
+{
+	$word = trim($word);
+	if($word[0] == "`" || $word[strlen($word)-1] == "`")
+	{
+		$find = str_replace("`","\b",$word);
+		if(preg_match("/$find/i", $compare)) {
+			// echo "<br>TRUE: $find ::: $compare<br>";
+			return true;
+		}
+		// else
+		// 	echo "<br>FALSE: $word ::: $compare<br>";
+	}
 	return false;
 }
 function colorcell($str)
