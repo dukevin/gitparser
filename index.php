@@ -2,7 +2,7 @@
 <html>
 <head>
 	<meta chartype=utf-8>
-	<title>google git scraper</title>
+	<title>Google Git Filter</title>
 	<link rel="icon" type="image/png" href="favicon.ico">
 	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 	<script src="http://timeago.yarp.com/jquery.timeago.js" type="text/javascript"></script>

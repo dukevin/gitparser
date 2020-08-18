@@ -4,7 +4,7 @@
 <?php
 $url = $_REQUEST["url"];
 $PAGE = "gerrit";
-$title = "gerrit results";
+$title = "Gerrit Results";
 $url = str_replace("/q", '', $url);
 $urlP = explode("/",$url);
 if(strpos($url,"chromium.googlesource") !== false) {
@@ -23,7 +23,7 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 ?>
 	<title><?=$title?></title>
 	<link rel="icon" type="image/png" href="favicon.ico">
-	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}.purple{background-color:#f0e5fa}</style>
+	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%}.green{background-color:#afa}.red{background-color:#faa}.purple{background-color:#f0e5fa}.purple:hover{background-color:#cface8}</style>
 	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 	<script>
 	$(document).ready(function(){
@@ -118,7 +118,7 @@ if($PAGE == "gerrit") {
 		$_REQUEST['amt'] = 500;
 	if($_REQUEST['amt'] > 1000000 || !is_numeric($_REQUEST['amt']) || $_REQUEST['amt'] < 1)
 	{
-		echo "gerrit amount was not valid, defaulting to 500<br>";
+		echo "Gerrit amount was not valid, defaulting to 500<br>";
 		$_REQUEST['amt'] = 500;
 	}
 	for($i=0; $i<$_REQUEST['amt']; $i+=500)
@@ -147,7 +147,7 @@ echo "</table><br>\n";
 if($total == 0 && $findf == 0 && $skipped == 0)
 	echo "Empty results from <br> $url <br> identified as $PAGE";
 else
-	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) except for ".$foundf." entries";
+	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) excluding ".$foundf." entries";
 ?>
 </body>
 </html>
@@ -217,12 +217,8 @@ function check_whole_words($compare, $word) //find whole words token and the who
 	if($word[0] == "`" || $word[strlen($word)-1] == "`")
 	{
 		$find = str_replace("`","\b",$word);
-		if(preg_match("/$find/i", $compare)) {
-			// echo "<br>TRUE: $find ::: $compare<br>";
+		if(preg_match("/$find/i", $compare))
 			return true;
-		}
-		// else
-		// 	echo "<br>FALSE: $word ::: $compare<br>";
 	}
 	return false;
 }
