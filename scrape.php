@@ -4,7 +4,7 @@
 <?php
 $url = $_REQUEST["url"];
 $PAGE = "gerrit";
-$title = "Gerrit Results";
+$title = "gerrit results";
 $url = str_replace("/q", '', $url);
 $urlP = explode("/",$url);
 if(strpos($url,"chromium.googlesource") !== false) {
@@ -23,7 +23,7 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 ?>
 	<title><?=$title?></title>
 	<link rel="icon" type="image/png" href="favicon.ico">
-	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%}.green{background-color:#afa}.red{background-color:#faa}.purple{background-color:#f0e5fa}.purple:hover{background-color:#cface8}</style>
+	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}.purple{background-color:#f0e5fa}.purple:hover{background-color:#cface8}.red:hover{background-color:#d88}.found{font-style: italic}</style>
 	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 	<script>
 	$(document).ready(function(){
@@ -98,10 +98,16 @@ $skipped = $total = $foundf = 0;
 if($PAGE == "googlesource")
 foreach($data->log as $d)
 { 
+	$debug = $subject = $found_debug = '';
 	if(on_blacklist($d->message.$d->author->name))
-		continue;
+		if($_REQUEST["debug"] == "on") {
+			$found_debug = "<br><span class='found'>Found: ".$subject."</span>";
+			$debug = "class='red'";
+		}
+		else 
+			continue;
 	$total = sizeof($data->log);
-	echo "<tr>";
+	echo "<tr ".$debug.">";
 	$message = explode(PHP_EOL, $d->message);
 	$message1 = htmlspecialchars($message[0]);
 	array_shift($message);array_shift($message);
@@ -110,7 +116,7 @@ foreach($data->log as $d)
 	$message2 = explode("Change-Id",$message2);
 	$message2 = $message2[0];
 	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0' target='_blank'>$0</a>", $message2);
-	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a></td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time,true))."</td>";
+	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a>$found_debug</td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time,true))."</td>";
 	echo "</tr>";
 }
 if($PAGE == "gerrit") {
@@ -118,7 +124,7 @@ if($PAGE == "gerrit") {
 		$_REQUEST['amt'] = 500;
 	if($_REQUEST['amt'] > 1000000 || !is_numeric($_REQUEST['amt']) || $_REQUEST['amt'] < 1)
 	{
-		echo "Gerrit amount was not valid, defaulting to 500<br>";
+		echo "gerrit amount was not valid, defaulting to 500<br>";
 		$_REQUEST['amt'] = 500;
 	}
 	for($i=0; $i<$_REQUEST['amt']; $i+=500)
@@ -132,11 +138,17 @@ if($PAGE == "gerrit") {
 		foreach($data as $d)
 		{
 			$total++;
+			$debug = $subject = $found_debug = '';
 			if(on_blacklist($d->subject.$d->project.$d->status.$d->owner->_account_id.$d->status)) 
-				continue;
-			echo "<tr>";
+				if($_REQUEST["debug"] == "on") {
+					$found_debug = "<br><span class='found'>Found: ".$subject."</span>";
+					$debug = "class='red'";
+				}
+				else
+					continue;
+			echo "<tr ".$debug.">";
 			$link="https://chromium-review.googlesource.com/q/".$d->_number;
-			echo "<td><a href='$link' target='_blank'>".htmlspecialchars($d->subject)."</a></td><td class='med'>".htmlspecialchars($d->project)."</td>".colorcell($d->status)."<td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
+			echo "<td><a href='$link' target='_blank'>".htmlspecialchars($d->subject)."</a>$found_debug</td><td class='med'>".htmlspecialchars($d->project)."</td>".colorcell($d->status)."<td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
 			echo "</tr>";
 			unset($details);
 		}
@@ -147,7 +159,7 @@ echo "</table><br>\n";
 if($total == 0 && $findf == 0 && $skipped == 0)
 	echo "Empty results from <br> $url <br> identified as $PAGE";
 else
-	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) excluding ".$foundf." entries";
+	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) except for ".$foundf." entries";
 ?>
 </body>
 </html>
@@ -156,7 +168,7 @@ else
 //check givin compare string with blacklist. If it is on the blacklist and not whitelist, return true. If it is on show only return true
 function on_blacklist($compare)
 {
-	global $foundf, $skipped;
+	global $foundf, $skipped, $subject;
 	$black = explode(PHP_EOL,$_REQUEST["blacklist"]);
 	$white = explode(PHP_EOL,$_REQUEST["whitelist"]);
 	$only = explode(PHP_EOL,$_REQUEST["only"]);
@@ -183,12 +195,14 @@ function on_blacklist($compare)
 			if(on_whitelist($compare, $white))
 				return false;
 			$skipped++;
+			$subject = $b;
 			return true;
 		}
 		if(@stripos($compare,trim($b)) !== false)
 		{
 			if(on_whitelist($compare, $white))
 				return false;
+			$subject = $b;
 			$skipped++;
 			return true;
 		}
@@ -217,8 +231,12 @@ function check_whole_words($compare, $word) //find whole words token and the who
 	if($word[0] == "`" || $word[strlen($word)-1] == "`")
 	{
 		$find = str_replace("`","\b",$word);
-		if(preg_match("/$find/i", $compare))
+		if(preg_match("/$find/i", $compare)) {
+			// echo "<br>TRUE: $find ::: $compare<br>";
 			return true;
+		}
+		// else
+		// 	echo "<br>FALSE: $word ::: $compare<br>";
 	}
 	return false;
 }
