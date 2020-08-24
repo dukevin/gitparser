@@ -98,12 +98,10 @@ $skipped = $total = $foundf = 0;
 if($PAGE == "googlesource")
 foreach($data->log as $d)
 { 
-	$debug = $subject = $found_debug = '';
+	$debug = $subject = '';
 	if(on_blacklist($d->message.$d->author->name))
-		if($_REQUEST["debug"] == "on") {
-			$found_debug = "<br><span class='found'>Found: ".$subject."</span>";
+		if($_REQUEST["debug"] == "on")
 			$debug = "class='red'";
-		}
 		else 
 			continue;
 	$total = sizeof($data->log);
@@ -116,7 +114,7 @@ foreach($data->log as $d)
 	$message2 = explode("Change-Id",$message2);
 	$message2 = $message2[0];
 	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0' target='_blank'>$0</a>", $message2);
-	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a>$found_debug</td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time,true))."</td>";
+	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a>".$subject."</td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time,true))."</td>";
 	echo "</tr>";
 }
 if($PAGE == "gerrit") {
@@ -138,17 +136,15 @@ if($PAGE == "gerrit") {
 		foreach($data as $d)
 		{
 			$total++;
-			$debug = $subject = $found_debug = '';
+			$debug = $subject = '';
 			if(on_blacklist($d->subject.$d->project.$d->status.$d->owner->_account_id.$d->status)) 
-				if($_REQUEST["debug"] == "on") {
-					$found_debug = "<br><span class='found'>Found: ".$subject."</span>";
+				if($_REQUEST["debug"] == "on")
 					$debug = "class='red'";
-				}
 				else
 					continue;
 			echo "<tr ".$debug.">";
 			$link="https://chromium-review.googlesource.com/q/".$d->_number;
-			echo "<td><a href='$link' target='_blank'>".htmlspecialchars($d->subject)."</a>$found_debug</td><td class='med'>".htmlspecialchars($d->project)."</td>".colorcell($d->status)."<td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
+			echo "<td><a href='$link' target='_blank'>".htmlspecialchars($d->subject)."</a>".$subject."</td><td class='med'>".htmlspecialchars($d->project)."</td>".colorcell($d->status)."<td><a href='https://chromium-review.googlesource.com/accounts/".$d->owner->_account_id."'>".$d->owner->_account_id."</a></td><td>".(convertTime(explode('.',$d->updated)[0]))."</td>";
 			echo "</tr>";
 			unset($details);
 		}
@@ -176,15 +172,19 @@ function on_blacklist($compare)
 		foreach($only as $o)
 		{
 			if(check_whole_words($compare, $o)) {
-				if(on_whitelist($compare, $white))
+				if($w = on_whitelist($compare, $white)) {
+					$subject = "<br><span class='found'>Found: ".$o.", whitelist: ".$w."</span>";
 					return false;
+				}
 				$skipped++;
 				return true;
 			}
 			if(@stripos($compare,trim($o)) === false) //not on show only list
 			{
-				if(on_whitelist($compare, $white))
+				if($w = on_whitelist($compare, $white)) {
+					$subject = "<br><span class='found'>Found: ".$o.", whitelist: ".$w."</span>";
 					return false;
+				}
 				$skipped++;
 				return true;
 			}
@@ -192,17 +192,21 @@ function on_blacklist($compare)
 	foreach($black as $b)
 	{
 		if(check_whole_words($compare,$b)) {
-			if(on_whitelist($compare, $white))
+			if($w = on_whitelist($compare, $white)){
+				$subject = "<br><span class='found'>Found: ".$b.", whitelist: ".$w."</span>";
 				return false;
+			}
 			$skipped++;
-			$subject = $b;
+			$subject = "<br><span class='found'>Found: ".$b."</span>";
 			return true;
 		}
 		if(@stripos($compare,trim($b)) !== false)
 		{
-			if(on_whitelist($compare, $white))
+			if($w = on_whitelist($compare, $white)) {
+				$subject = "<br><span class='found'>Found: ".$b.", whitelist: ".$w."</span>";
 				return false;
-			$subject = $b;
+			}
+			$subject = "<br><span class='found'>Found: ".$b."</span>";
 			$skipped++;
 			return true;
 		}
@@ -216,11 +220,11 @@ function on_whitelist($compare, $white)
 	{
 		if(check_whole_words($compare,$w)) {
 			$foundf++;
-			return true;
+			return $w;
 		}
 		if(@stripos($compare,trim($w)) !== false) {
 			$foundf++;
-			return true;
+			return $w;
 		}
 	}
 	return false;
