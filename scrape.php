@@ -8,9 +8,9 @@ $title = "gerrit results";
 $url = str_replace("/q", '', $url);
 $urlP = explode("/",$url);
 if(strpos($url,"chromium.googlesource") !== false) {
-	$url .= "&format=JSON";
 	$PAGE = "googlesource";
 	$title = "Google Source";
+	$url = preg_replace('/[?&]+n=[^&]+(&|$)/','$1',$url); //remove amount (n=) from url
 	foreach($urlP as $u)
 		if(is_numeric($u[0]))
 		{
@@ -83,46 +83,69 @@ echo "<a style='float:left' href='index.php?".$vars."'>&lt; Edit </a><br clear=b
 $bugURL = "https://bugs.chromium.org/p/chromium/issues/detail?id=";
 $CL = "https://chromeos.google.com/partner/console/a/1/clFinder?query=";
 echo "<h1>".$title."</h1>\n";
-try {
-	$data = get_json($url);
-} catch(Exception $e) {
-	die($e->getMessage());
-}
-
 echo "<span id='platcont'><span id='platformvn' style='display:none'>".(empty($vn[0]) ? "" : $vn[0])."</span><span id='platformb'>&nbsp</span><span id='platformvn2' style='display:none'>".(empty($vn[1]) ? "" : $vn[1])."</span></span>\n";
-
 echo "<table>";
 
 $skipped = $total = $foundf = 0;
 
 if($PAGE == "googlesource")
-foreach($data->log as $d)
-{ 
-	$debug = $subject = '';
-	if(on_blacklist($d->message.$d->author->name))
-		if($_REQUEST["debug"] == "on")
-			$debug = "class='red'";
-		else 
-			continue;
-	$total = sizeof($data->log);
-	echo "<tr ".$debug.">";
-	$message = explode(PHP_EOL, $d->message);
-	$message1 = htmlspecialchars($message[0]);
-	array_shift($message);array_shift($message);
-	$message = array_map('htmlspecialchars', $message);
-	$message2 = implode("<br>\n",$message);
-	$message2 = explode("Change-Id",$message2);
-	$message2 = $message2[0];
-	$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0' target='_blank'>$0</a>", $message2);
-	echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a>".$subject."</td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time,true))."</td>";
-	echo "</tr>";
+{
+	if(empty($_REQUEST['amt']))
+		$_REQUEST['amt'] = 1000;
+	if($_REQUEST['amt'] > 1000000 || !is_numeric($_REQUEST['amt']) || $_REQUEST['amt'] < 1)
+	{
+		echo "Google Source amount was not valid, defaulting to 1000<br>";
+		$_REQUEST['amt'] = 1000;
+	}
+	$inc = $_REQUEST['amt'] > 10000 ? 10000 : $_REQUEST['amt'];
+	for($i=0; $i<$_REQUEST['amt']; $i+=$inc)
+	{
+		$inc = $_REQUEST['amt'] - $i > 10000 ? 10000 : $_REQUEST['amt'];
+		$n = "?n=".$inc;
+		if($i==0)
+			$last = $last_p = '';
+		else
+			$last_p = "?s=".$last;
+		try {
+			$data = get_json($url.$n.$last_p."&format=JSON");
+		} catch(Exception $e) {
+			echo($e->getMessage());
+		}
+		foreach($data->log as $d)
+		{ 
+			$debug = $subject = '';
+			$total++;
+			if(on_blacklist($d->message.$d->author->name))
+				if($_REQUEST["debug"] == "on")
+					$debug = "class='red'";
+				else 
+					continue;
+			echo "<tr ".$debug.">";
+			$message = explode(PHP_EOL, $d->message);
+			$message1 = htmlspecialchars($message[0]);
+			array_shift($message);array_shift($message);
+			$message = array_map('htmlspecialchars', $message);
+			$message2 = implode("<br>\n",$message);
+			$message2 = explode("Change-Id",$message2);
+			$message2 = $message2[0];
+			$message2 = preg_replace('/\d{6,9}/', "<a href='$bugURL$0' target='_blank'>$0</a>", $message2);
+			echo "<td><a href='https://chromium.googlesource.com/chromium/src/+/".$d->commit."' target='_blank'>".$message1."</a><a href='$CL".$d->commit."' target='_blank'>&nbsp;ⓘ&nbsp;</a>".$subject."</td><td class='message'>".$message2."</td><td>".$d->author->name."</td>"."<td>".(time_elapsed_string($d->author->time,true))."</td>";
+			echo "</tr>";
+			$commit = $data->next;
+		}
+		if($last == $commit) {
+			//echo "<script>console.log('last: ". $commit ."');</script>";
+			break;
+		}
+		$last = $commit;
+	}
 }
 if($PAGE == "gerrit") {
 	if(empty($_REQUEST['amt']))
 		$_REQUEST['amt'] = 500;
 	if($_REQUEST['amt'] > 1000000 || !is_numeric($_REQUEST['amt']) || $_REQUEST['amt'] < 1)
 	{
-		echo "gerrit amount was not valid, defaulting to 500<br>";
+		echo "Gerrit amount was not valid, defaulting to 500<br>";
 		$_REQUEST['amt'] = 500;
 	}
 	for($i=0; $i<$_REQUEST['amt']; $i+=500)
@@ -236,11 +259,8 @@ function check_whole_words($compare, $word) //find whole words token and the who
 	{
 		$find = str_replace("`","\b",$word);
 		if(preg_match("/$find/i", $compare)) {
-			// echo "<br>TRUE: $find ::: $compare<br>";
 			return true;
 		}
-		// else
-		// 	echo "<br>FALSE: $word ::: $compare<br>";
 	}
 	return false;
 }
@@ -268,6 +288,7 @@ function get_json($url)
 	$data = json_decode(substr($file, 4));
 	if(empty($data)) 
 		throw new Exception("Error: Empty or invalid JSON");
+	echo "<script>console.log('Queried for JSON data: ". $url ."');</script>";
 	return $data;
 }
 function time_elapsed_string($datetime, $full = false) {
