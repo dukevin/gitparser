@@ -23,7 +23,7 @@ else if($url[strlen($url)-1] != '/' && !is_numeric($url[strlen($url)-1])) $url.=
 ?>
 	<title><?=$title?></title>
 	<link rel="icon" type="image/png" href="favicon.ico">
-	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}.purple{background-color:#f0e5fa}.purple:hover{background-color:#cface8}.red:hover{background-color:#d88}.found{font-style: italic}</style>
+	<style>*{font-family:arial;text-align:center;transition:0.33s all;text-decoration: none} td{border:1px solid black; word-break: break-all} td:first-child{font-size:14pt; width:40%} td:last-child,td:nth-last-child(2) {width: 5%;} tr:hover {background-color:#eee} table{border-collapse:collapse; width:100%;} .message{font-size:11px; text-align:left;} .med{width:8%} .green{background-color:#afa}.blue{background-color:#aff}.red{background-color:#faa}.purple{background-color:#f0e5fa}.purple:hover{background-color:#cface8}.red:hover{background-color:#d88}.found{font-style: italic}#url{}</style>
 	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 	<script>
 	$(document).ready(function(){
@@ -178,8 +178,10 @@ echo "</table><br>\n";
 if($total == 0 && $findf == 0 && $skipped == 0)
 	echo "Empty results from <br> $url <br> identified as $PAGE";
 else
-	echo "Skipped $skipped of ".$total." (".round($skipped/$total*100,2)."%) except for ".$foundf." entries";
+	echo $total." changes in total. Skipped ".$skipped." of ".$total." (".round($skipped/$total*100,2)."%) except for ".$foundf." entries<br><br>";
+echo "Source: <input id='url' onClick='this.select();' value='".$url."'>";
 ?>
+
 </body>
 </html>
 
